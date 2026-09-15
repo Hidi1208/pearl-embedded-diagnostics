@@ -1,0 +1,20 @@
+# PlatformIO
+firmware/.pio/
+firmware/.vscode/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+server/pearl-env/
+server/.env
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*~
+.idea/
+.vscode/

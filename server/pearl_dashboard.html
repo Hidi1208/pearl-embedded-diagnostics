@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PEARL</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0e1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-dim: #7d8590;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 2px;
+  }
+
+  header h1 span { color: var(--accent); }
+
+  #status {
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+  }
+
+  #status.connected { color: var(--green); }
+  #status.disconnected { color: var(--red); }
+
+  .container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Telemetry Panel ──────────────────── */
+  .telemetry {
+    width: 340px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .telem-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+  }
+
+  .telem-group h3 {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  .telem-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  .telem-label { color: var(--text-dim); }
+
+  .telem-value { font-weight: 600; }
+
+  .telem-value.on { color: var(--green); }
+  .telem-value.off { color: var(--text-dim); }
+  .telem-value.error { color: var(--red); }
+  .telem-value.warn { color: var(--yellow); }
+
+  /* ── Quick Controls ───────────────────── */
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .ctrl-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .ctrl-btn:hover { border-color: var(--accent); }
+  .ctrl-btn.active { border-color: var(--green); color: var(--green); }
+
+  /* ── Chat Panel ───────────────────────── */
+  .chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .msg.user {
+    align-self: flex-end;
+    background: #1f3a5f;
+    border: 1px solid #264d7a;
+  }
+
+  .msg.pearl {
+    align-self: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .msg.system {
+    align-self: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .msg.pearl .cmd-tag {
+    display: inline-block;
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 2px 8px;
+    background: #1a2a1a;
+    border: 1px solid #2a4a2a;
+    border-radius: 3px;
+    color: var(--green);
+  }
+
+  .chat-input {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .chat-input input {
+    flex: 1;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .chat-input input:focus { border-color: var(--accent); }
+
+  .chat-input button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 10px 20px;
+    background: var(--accent);
+    color: #0e1117;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .chat-input button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .typing {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 4px 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span>PEARL</span> Dashboard</h1>
+  <div id="status" class="disconnected">disconnected</div>
+</header>
+
+<div class="container">
+  <div class="telemetry">
+
+    <div class="telem-group">
+      <h3>System</h3>
+      <div class="telem-row">
+        <span class="telem-label">uptime</span>
+        <span class="telem-value" id="t-uptime">--</span>
+      </div>
+    </div>
+
+    <div class="telem-group">
+      <h3>GPIO</h3>
+      <div class="telem-row">
+        <span class="telem-label">LED</span>
+        <span class="telem-value" id="t-led">--</span>
+      </div>
+      <div class="telem-row">
+        <span class="telem-label">PA8 (PWM)</span>
+        <span class="telem-value" id="t-pa8">--</span>
+      </div>
+      <div class="telem-row">
+        <span class="telem-label">PB5 (IN1)</span>
+        <span class="telem-value" id="t-pb5">--</span>
+      </div>
+      <div class="telem-row">
+        <span class="telem-label">PB6 (IN2)</span>
+        <span class="telem-value" id="t-pb6">--</span>
+      </div>
+    </div>
+
+    <div class="telem-group">
+      <h3>IMU Status</h3>
+      <div class="telem-row">
+        <span class="telem-label">I2C link</span>
+        <span class="telem-value" id="t-imu">--</span>
+      </div>
+      <div class="telem-row">
+        <span class="telem-label">ACS712 (mV)</span>
+        <span class="telem-value" id="t-acs">--</span>
+      </div>
+    </div>
+
+
+
+    <div class="telem-group">
+      <h3>Accelerometer</h3>
+      <div class="telem-row">
+        <span class="telem-label">X</span>
+        <span class="telem-value" id="t-ax">--</span>
+      </div>
+      <div class="telem-row">
+        <span class="telem-label">Y</span>
+        <span class="telem-value" id="t-ay">--</span>
+      </div>
+      <div class="telem-row">
+        <span class="telem-label">Z</span>
+        <span class="telem-value" id="t-az">--</span>
+      </div>
+    </div>
+
+    <div class="telem-group">
+      <h3>Magnetometer</h3>
+      <div class="telem-row">
+        <span class="telem-label">X</span>
+        <span class="telem-value" id="t-magx">--</span>
+      </div>
+      <div class="telem-row">
+        <span class="telem-label">Y</span>
+        <span class="telem-value" id="t-magy">--</span>
+      </div>
+      <div class="telem-row">
+        <span class="telem-label">Z</span>
+        <span class="telem-value" id="t-magz">--</span>
+      </div>
+    </div>
+
+    <div class="telem-group">
+      <h3>Quick Controls</h3>
+      <div class="controls" id="quick-controls">loading...</div>
+    </div>
+
+  </div>
+
+  <div class="chat">
+    <div class="messages" id="messages">
+      <div class="msg system">PEARL v0.1 — type a question or command</div>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="input" placeholder="Ask PEARL anything..." autocomplete="off">
+      <button id="send-btn" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const msgBox = document.getElementById('messages');
+  const input = document.getElementById('input');
+  const sendBtn = document.getElementById('send-btn');
+  const statusEl = document.getElementById('status');
+
+  async function loadConfig() {
+    try {
+      const res = await fetch('/config');
+      const cfg = await res.json();
+      const box = document.getElementById('quick-controls');
+      box.innerHTML = '';
+      for (const cmd of cfg.commands) {
+        const examples = cmd.examples && cmd.examples.length > 0 ? cmd.examples : [cmd.id];
+        for (const ex of examples) {
+          const btn = document.createElement('button');
+          btn.className = 'ctrl-btn';
+          btn.textContent = ex;
+          btn.title = cmd.description;
+          btn.onclick = () => sendCmd(ex);
+          box.appendChild(btn);
+        }
+      }
+    } catch (e) { console.error('Config load failed:', e); }
+  }
+  loadConfig();
+
+  // ── WebSocket: live telemetry ─────────────
+  let ws;
+  function connectWS() {
+    ws = new WebSocket(`ws://${location.host}/ws`);
+    ws.onopen = () => {
+      statusEl.textContent = 'connected';
+      statusEl.className = 'connected';
+    };
+    ws.onclose = () => {
+      statusEl.textContent = 'disconnected';
+      statusEl.className = 'disconnected';
+      setTimeout(connectWS, 2000);
+    };
+    ws.onmessage = (e) => {
+      const d = JSON.parse(e.data);
+      updateTelemetry(d);
+    };
+  }
+  connectWS();
+
+  function updateTelemetry(d) {
+    const secs = Math.floor(d.t / 1000);
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    document.getElementById('t-uptime').textContent = m + 'm ' + s + 's';
+
+    setGpio('t-led', d.gpio?.LED);
+    setGpio('t-pa8', d.gpio?.PA8);
+    setGpio('t-pb5', d.gpio?.PB5);
+    setGpio('t-pb6', d.gpio?.PB6);
+
+    // IMU status
+    const imuEl = document.getElementById('t-imu');
+    if (d.imu === 1) { imuEl.textContent = 'CONNECTED'; imuEl.className = 'telem-value on'; }
+    else { imuEl.textContent = 'DISCONNECTED'; imuEl.className = 'telem-value error'; }
+
+    document.getElementById('t-acs').textContent = d.acs_mv;
+
+    // Accelerometer
+    document.getElementById('t-ax').textContent = d.mpu?.[0] ?? '--';
+    document.getElementById('t-ay').textContent = d.mpu?.[1] ?? '--';
+    document.getElementById('t-az').textContent = d.mpu?.[2] ?? '--';
+
+    // Magnetometer
+    document.getElementById('t-magx').textContent = d.mag?.[0] ?? '--';
+    document.getElementById('t-magy').textContent = d.mag?.[1] ?? '--';
+    document.getElementById('t-magz').textContent = d.mag?.[2] ?? '--';
+  }
+
+  function setGpio(id, val) {
+    const el = document.getElementById(id);
+    if (val === 1) { el.textContent = 'HIGH'; el.className = 'telem-value on'; }
+    else if (val === 0) { el.textContent = 'LOW'; el.className = 'telem-value off'; }
+    else { el.textContent = '--'; el.className = 'telem-value'; }
+  }
+
+  function setAds(id, val) {
+    const el = document.getElementById(id);
+    if (val === -1 || val === undefined) {
+      el.textContent = 'N/C';
+      el.className = 'telem-value error';
+    } else {
+      el.textContent = val;
+      el.className = 'telem-value';
+    }
+  }
+
+  function setMpu(id, val) {
+    const el = document.getElementById(id);
+    if (val === 0 || val === undefined) {
+      el.textContent = '0';
+      el.className = 'telem-value warn';
+    } else {
+      el.textContent = val;
+      el.className = 'telem-value';
+    }
+  }
+
+  // ── Quick control buttons ─────────────────
+  async function sendCmd(cmd) {
+    // Send as a chat message so it goes through the server
+    await fetch('/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: '__CMD__' + cmd})
+    });
+    addMsg('system', 'Sent: ' + cmd);
+  }
+
+  // ── Chat ──────────────────────────────────
+  function addMsg(type, text, cmd) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + type;
+    div.textContent = text;
+    if (cmd) {
+      const tag = document.createElement('div');
+      tag.className = 'cmd-tag';
+      tag.textContent = '→ ' + cmd;
+      div.appendChild(tag);
+    }
+    msgBox.appendChild(div);
+    msgBox.scrollTop = msgBox.scrollHeight;
+  }
+
+  async function sendChat() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMsg('user', text);
+    input.value = '';
+    sendBtn.disabled = true;
+
+    const typing = document.createElement('div');
+    typing.className = 'typing';
+    typing.textContent = 'PEARL is thinking...';
+    msgBox.appendChild(typing);
+    msgBox.scrollTop = msgBox.scrollHeight;
+
+    try {
+      const res = await fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: text})
+      });
+      const data = await res.json();
+      typing.remove();
+      addMsg('pearl', data.reply, data.command);
+    } catch (err) {
+      typing.remove();
+      addMsg('system', 'Error: ' + err.message);
+    }
+
+    sendBtn.disabled = false;
+    input.focus();
+  }
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendChat();
+  });
+</script>
+
+</body>
+</html>

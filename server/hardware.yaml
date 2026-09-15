@@ -1,0 +1,91 @@
+project: imu-fault-detection
+board: STM32 F401RE (Nucleo)
+description: >
+  Real-time 9-axis IMU monitoring with PEARL. The system reads accelerometer,
+  gyroscope, and magnetometer data from an MPU9250 and uses AI to detect
+  sensor faults, environmental anomalies, and wiring issues.
+
+connections:
+  - name: mpu9250-accel-gyro
+    type: sensor
+    pin: PB8/PB9 (D15/D14)
+    protocol: I2C1 at 400kHz, address 0x68
+    telemetry_field: mpu
+    description: >
+      MPU9250 accelerometer — mpu is [ax, ay, az] raw 16-bit, ±2g range.
+      1g ≈ 16384. Flat on table: az ≈ +16384, ax/ay near 0.
+
+  - name: mpu9250-magnetometer
+    type: sensor
+    pin: PB8/PB9 (D15/D14)
+    protocol: I2C1 via bypass to AK8963 at 0x0C
+    telemetry_field: mag
+    description: >
+      MPU9250 internal magnetometer (AK8963) — mag is [mx, my, mz] raw 16-bit.
+      Values reflect Earth's magnetic field and should be stable. Typical baseline
+      around [136, -82, -190] but varies by location and orientation.
+
+  - name: acs712
+    type: sensor
+    pin: PA0 (A0)
+    protocol: ADC
+    telemetry_field: acs_mv
+    description: >
+      ACS712 current sensor (5A module) through 5.6kΩ voltage divider.
+      Baseline ~950-975mV at zero current.
+
+  - name: led
+    type: indicator
+    pin: PA5 (D13)
+    protocol: GPIO
+    telemetry_field: LED (inside gpio object)
+    description: Onboard LED
+    commands:
+      - id: led_on
+        format: "L1"
+        description: "LED on"
+      - id: led_off
+        format: "L0"
+        description: "LED off"
+
+telemetry_format:
+  t: "timestamp in ms since boot"
+  acs_mv: "ACS712 voltage in mV after divider, baseline ~950-975mV = zero current"
+  mpu: "[ax, ay, az] accelerometer raw, ±2g, 1g ≈ 16384"
+  mag: "[mx, my, mz] magnetometer raw from AK8963, reflects Earth's magnetic field"
+  imu: "1 = MPU9250 responding on I2C, 0 = communication lost"
+  ads: "[-1,-1,-1,-1] — ADS1115 not connected"
+  pwm: "PWM duty — unused in this demo"
+  gpio: "object with PA8, PB5, PB6, LED states"
+  step: "stepper position — unused in this demo"
+
+fault_scenarios:
+  - name: Magnetic interference
+    description: >
+      Bring a magnet close to the MPU9250. mag values shift by hundreds or
+      thousands while mpu values stay stable.
+    detection: >
+      mag changes dramatically while mpu remains within normal noise. This
+      indicates external magnetic interference, NOT physical disturbance.
+
+  - name: I2C bus disconnection
+    description: >
+      Pull SDA or SCL wire. All IMU readings drop to zero, imu goes to 0.
+    detection: >
+      imu changes from 1 to 0, mpu and mag both go to zero simultaneously.
+      This is I2C communication failure — check SDA/SCL wiring.
+
+  - name: Physical disturbance
+    description: >
+      Tap table or shake sensor. Accelerometer spikes in mpu array.
+    detection: >
+      Rapid fluctuation in mpu values while mag stays stable. Unlike magnetic
+      interference (mag only) or I2C failure (all zeros), physical disturbance
+      affects accel but not magnetometer.
+
+  - name: Orientation change
+    description: >
+      Tilt or flip MPU9250. Gravity vector in mpu shifts axis.
+    detection: >
+      The mpu value reading ~16384 (gravity) transfers to a different position.
+      This is normal operation, not a fault.
