@@ -1,6 +1,6 @@
 # PEARL — Physical Environment Aware Reasoning Layer
 
-![PEARL Full System](images/pearl-full-setup.jpeg)
+<img src="images/pearl-full-setup.jpeg" width="600">
 
 An AI-powered embedded hardware diagnostics system. An STM32 F401RE streams live sensor telemetry over UART to a Raspberry Pi 5, which feeds it through a hardware context engine and an LLM (Gemini 3.6 Flash) to provide real-time natural language fault diagnosis via a web dashboard.
 
@@ -18,7 +18,7 @@ STM32 F401RE → UART → Raspberry Pi 5 → Context Engine (hardware.yaml) → 
 
 ## Hardware
 
-![Hardware Close-up](images/pearl-hardware-closeup.jpeg)
+<img src="images/pearl-hardware-closeup.jpeg" width="600">
 
 ## Demo Scenarios
 
@@ -29,4 +29,4 @@ STM32 F401RE → UART → Raspberry Pi 5 → Context Engine (hardware.yaml) → 
 
 ## Dashboard
 
-![Fault Detection](images/pearl-dashboard-fault.png)
+<img src="images/pearl-dashboard-fault.png" width="700">
